@@ -1,6 +1,8 @@
+const debug = require('debug')(process.env.APP_NAME);
 const Iron = require('@hapi/iron');
 
 function saveState(req, res, next) {
+    debug("Saving continue state, query: %o",req.query);
     if (req.query && req.query.state) {
         req.session['continueState'] = req.query.state;
     }
@@ -8,12 +10,14 @@ function saveState(req, res, next) {
 }
 
 function auth0Continue(req, res) {
+    debug("Continuing after login. user: %o",req.user);
     const continueUrl = `https://${process.env.AUTH0_DOMAIN}/continue?state=${req.session.continueState}`;
     res.redirect(continueUrl);
 }
 
 
 async function createMobileSession(req, res, next) {
+    debug("Continuing mobile session for: %o",req.user);
     if (!req.session || !req.session.a0Tokens)
         return next("Required session data missing.");
 
@@ -30,7 +34,7 @@ async function createMobileSession(req, res, next) {
     const oneYear = 86400 * 30 * 12 * 1000;
     //WARN: Secure:false for testing only. The flag must be set to "true" when moved to HTTPS
     res.cookie(process.env.MOBILE_SESSION_KEY, sealed, { httpOnly: true, maxAge: oneYear, sameSite: "lax" })
-
+    debug("Cookie sent: %s=%s",process.env.MOBILE_SESSION_KEY, sealed);
     next();
 }
 

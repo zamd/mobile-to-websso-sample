@@ -2,7 +2,7 @@ require('dotenv').config()
 const defaultEnv = require('./env');
 
 process.env = {
-    ...process.env, 
+    ...process.env,
     ...defaultEnv
 };
 
@@ -50,10 +50,30 @@ app.use(cookieParser());
 app.use('/login/callback', passport.authenticate("auth0"), createMobileSession, auth0Continue);
 app.use('/login', saveState, passport.authenticate("auth0"));
 
-app.use('/mobile', passport.authenticate('mobileSessionAuth'), (_ , res) => res.redirect('/'));
+app.use('/mobile', passport.authenticate('mobileSessionAuth'), (_, res) => res.redirect('/'));
 
 app.use(ensureLoggedIn('/login'));
 
 app.use('/', indexRouter);
+
+
+// catch 404 and forward to error handler
+app.use(function (req, res, next) {
+    next(createError(404));
+});
+
+// error handler
+app.use(function (err, req, res, next) {
+    const sanitize = err => err.isBoom ? {...err.output.payload, status: err.output.statusCode} : err;
+
+    err = sanitize(err);
+    // set locals, only providing error in development
+    res.locals.message = err.message;
+    res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+    // render the error page
+    res.status(err.status || 500);
+    res.render('error');
+});
 
 module.exports = app;
